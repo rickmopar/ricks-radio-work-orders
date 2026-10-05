@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Current Work | Ricks Radio Conversions</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#182735;background:#f3f5f7}*{box-sizing:border-box}body{margin:0;padding:24px}main{max-width:1100px;margin:auto}header{border-top:6px solid #ad392e;padding:24px 0}h1{margin:6px 0;font-size:32px}p{line-height:1.5;color:#526170}.brand{font-weight:bold;color:#ad392e}.totals{display:flex;gap:16px;flex-wrap:wrap}.card{background:white;border:1px solid #dce2e7;border-radius:8px;padding:20px;flex:1;min-width:150px}.card strong{display:block;font-size:32px;margin-bottom:6px}.controls{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}input,select{font:inherit;padding:12px;border:1px solid #b9c4ce;border-radius:5px}input{flex:1;min-width:220px}.table{overflow:auto;background:white;border:1px solid #dce2e7;border-radius:8px}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:15px;border-bottom:1px solid #e1e6eb;vertical-align:top}th{background:#eaf0f4;white-space:nowrap}.status{font-size:13px;font-weight:bold;white-space:nowrap}#message{padding:22px;margin:0}footer{font-size:13px;color:#526170;margin-top:20px}
+</style>
+<main>
+<header><div class="brand">Ricks Radio Conversions</div><h1>On the Workbench</h1><p>A running list of radio projects and their current progress.</p></header>
+<section class="totals" aria-label="Work totals"><div class="card"><strong id="active">—</strong>Active jobs</div><div class="card"><strong id="progress">—</strong>In progress</div><div class="card"><strong id="waiting">—</strong>Waiting on parts</div><div class="card"><strong id="complete">—</strong>Completed</div></section>
+<div class="controls"><input id="search" aria-label="Search work orders" placeholder="Search work order, vehicle, or radio"><select id="filter" aria-label="Filter by status"><option value="">All statuses</option><option>Received</option><option>In progress</option><option>Waiting on parts</option><option>Completed</option></select></div>
+<div class="table"><table><thead><tr><th>Work order</th><th>Vehicle / radio</th><th>Work needed</th><th>Date received</th><th>Status</th><th>Public notes</th></tr></thead><tbody id="rows"></tbody></table><p id="message" role="status">Loading work list…</p></div>
+<footer>Public project updates. Customer contact information is kept private.</footer>
+</main>
+<script>
+let jobs=[];
+function csv(text){const rows=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){field+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(field);field='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';}else field+=c;}row.push(field);if(row.some(v=>v.trim()))rows.push(row);return rows;}
+function render(){const query=document.getElementById('search').value.toLowerCase();const status=document.getElementById('filter').value;const shown=jobs.filter(j=>(!status||j[4]===status)&&j.join(' ').toLowerCase().includes(query));const body=document.getElementById('rows');body.replaceChildren();for(const job of shown){const tr=document.createElement('tr');for(let i=0;i<6;i++){const td=document.createElement('td');td.textContent=job[i]||'—';if(i===4)td.className='status';tr.append(td);}body.append(tr);}const message=document.getElementById('message');message.hidden=shown.length>0;message.textContent=jobs.length?'No matching work orders.':'No work orders posted yet.';}
+async function load(){try{const response=await fetch('work-orders.csv',{cache:'no-store'});if(!response.ok)throw Error('Load failed');jobs=csv(await response.text()).slice(1);document.getElementById('active').textContent=jobs.filter(j=>j[4]!=='Completed').length;document.getElementById('progress').textContent=jobs.filter(j=>j[4]==='In progress').length;document.getElementById('waiting').textContent=jobs.filter(j=>j[4]==='Waiting on parts').length;document.getElementById('complete').textContent=jobs.filter(j=>j[4]==='Completed').length;render();}catch(e){document.getElementById('message').textContent='The work list could not be loaded. Please try again later.';}}
+document.getElementById('search').addEventListener('input',render);document.getElementById('filter').addEventListener('change',render);load();
+</script>
+</html>
